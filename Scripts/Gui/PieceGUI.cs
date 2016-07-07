@@ -6,30 +6,36 @@ public class PieceGUI : MonoBehaviour {
 
     public Piece piece;
     List<Vector3> path = new List<Vector3>(); //list of world pos points to follow
+    public bool hasEnteredBoard = false;
     //returns false if not falling
     public void Initialize(Piece _piece)
     {
         piece = _piece;
     }
 
-    public bool FollowPath(float dt)
+    public void FollowPath(float dt)
     {
         Vector3 moveTowards = getCurrentTarget();
         if (moveTowards == transform.position)
-        {
-            piece.UseAllPowerups();
-            return false;
-        }
+            return;
 
         transform.position = Vector3.MoveTowards(transform.position, path[0], GV.PIECE_FALL_SPEED * dt);
+        if (!hasEnteredBoard)
+            return;
+
         PowerUp powerup = GameObject.FindObjectOfType<PowerUpManager>().GetPowerUpAtGridLoc(Board.Instance.GetGridPosByRealWorldPos(transform.position));
-            
         if (powerup != null)
         {
             GameObject.FindObjectOfType<PowerUpManager>().RemovePowerUpAtGridLoc(Board.Instance.GetGridPosByRealWorldPos(transform.position));
             piece.AddPowerup(powerup);
         }
-        return true;
+
+        Vector2 curGridPiece = Board.Instance.GetGridPosByRealWorldPos(transform.position);
+        if (curGridPiece != piece.gridLoc)
+        {
+            Board.Instance.MovePiece(piece.gridLoc, curGridPiece);
+            piece.gridLoc = curGridPiece;
+        }
     }
 
     public void AddPathToEnd(Vector3 pathPos)
@@ -63,5 +69,10 @@ public class PieceGUI : MonoBehaviour {
         {
             return path[0];
         }
+    }
+
+    public bool PathEmpty()
+    {
+        return path.Count == 0;
     }
 }

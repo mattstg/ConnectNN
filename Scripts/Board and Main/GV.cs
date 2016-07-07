@@ -7,6 +7,7 @@ public class GV {
     public enum PowerupTypes { bomb };
     public enum GameState { PlayerPlacing, PlayerWatchingDrop, SettleAllPieces };
     public enum Victory { None, Blue, Red };
+    public enum Direction { Center, Up, Down, Left, Right };
 
     public static readonly int GAME_PLAYERS = 3;
     public static readonly int POWERUP_SPAWN_RATE = 5; //every n turns
@@ -21,6 +22,15 @@ public class GV {
     public static Vector3 removeZ(Vector3 v3)
     {
         return new Vector3(v3.x, v3.y, 0);
+    }
+
+    public static Vector3 RealWorldPosByGridLoc(Vector2 gridLoc)
+    {
+        Vector3 toRet = new Vector3();
+        toRet.x = gridLoc.x * SLOT_GUI_SIZE.x;
+        toRet.y = gridLoc.y * SLOT_GUI_SIZE.y;
+        toRet.z = 0;
+        return toRet;
     }
     
 }

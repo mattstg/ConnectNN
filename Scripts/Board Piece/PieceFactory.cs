@@ -22,14 +22,14 @@ public class PieceFactory
 #endregion
 
     //Peace gui also contains the peice, so just return the higher level
-    public PieceGUI MakePiece(Player playerOwner, Vector3 atPos)
+    public PieceGUI MakePiece(int pid, Vector3 atPos)
     {
         GameObject go = (MonoBehaviour.Instantiate(Resources.Load("Prefabs/Piece"),atPos,Quaternion.identity) as GameObject);
         if (!go)
             Debug.Log("yup that weird");
-        go.GetComponent<SpriteRenderer>().color = playerOwner.color;
+        go.GetComponent<SpriteRenderer>().color = GV.GAME_PLAYER_COLORS[pid];
         PieceGUI pgui = go.GetComponent<PieceGUI>();
-        pgui.Initialize(new Piece(playerOwner, pgui));
+        pgui.Initialize(new Piece(pid, pgui));
         return go.GetComponent<PieceGUI>();
     }
 
