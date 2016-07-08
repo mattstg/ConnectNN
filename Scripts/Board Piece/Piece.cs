@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class Piece {
 
-    public int pidOwner;
+    public int pid;
     public PieceGUI pieceGUI;
     public Vector2 gridLoc;
     public List<PowerUp> powerups = new List<PowerUp>();
@@ -12,7 +12,7 @@ public class Piece {
 
     public Piece(int _owner, PieceGUI pgui)
     {
-        pidOwner = _owner;
+        pid = _owner;
         pieceGUI = pgui;
     }
 
@@ -25,14 +25,14 @@ public class Piece {
     public void UseAllPowerups()
     {
         foreach (PowerUp pu in powerups)
-            pu.usePower();
+            GameObject.FindObjectOfType<GameFlow>().QueuePowerUp(pu);
     }
 
     private void Settle()
     {
         UseAllPowerups();
         settled = true;
-        Board.Instance.CheckForVictory(gridLoc);        
+        Board.Instance.CheckForVictory(gridLoc,pid);        
     }
 
     public void UpdateFalling(float dt)
@@ -42,13 +42,13 @@ public class Piece {
             if (!pieceGUI.hasEnteredBoard)
                 pieceGUI.hasEnteredBoard = true;
 
-            if (gridLoc.y == 0 || Board.Instance.HasSlotHasSettled(gridLoc, GV.Direction.Down))
+            if (gridLoc.y == 0 || Board.Instance.HasSlotHasSettled(gridLoc, GV.Direction.South))
             {
                 Settle();
             }
-            else if (Board.Instance.IsSlotIsEmpty(gridLoc, GV.Direction.Down))
+            else if (Board.Instance.IsSlotIsEmpty(gridLoc, GV.Direction.South))
             {
-                pieceGUI.AddPathToEnd(GV.RealWorldPosByGridLoc(Board.Instance.GetGridLocInDir(gridLoc, GV.Direction.Down)));
+                pieceGUI.AddPathToEnd(GV.RealWorldPosByGridLoc(Board.Instance.GetGridLocInDir(gridLoc, GV.Direction.South)));
             }
         }
         else

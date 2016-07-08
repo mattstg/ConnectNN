@@ -4,8 +4,10 @@ using System.Collections.Generic;
 
 public class Board
 {
+    static int failGaurd = 0;
     Piece[,] board;
     List<Piece> unresolvedPieces = new List<Piece>();
+    
 
     public void Initialize()
     {
@@ -37,16 +39,18 @@ public class Board
                 unresolvedPieces.RemoveAt(i);
     }
 
+   
+
     public void DestroyPiece(Vector2 gridLoc)
     {
-        if (board[(int)gridLoc.x, (int)gridLoc.y] != null)
+        if (!IsOutOfBounds(gridLoc) && board[(int)gridLoc.x, (int)gridLoc.y] != null)
         {
             Piece toDestroy = board[(int)gridLoc.x, (int)gridLoc.y];
             board[(int)gridLoc.x, (int)gridLoc.y] = null;
             GameObject.Destroy(toDestroy.pieceGUI.gameObject);
-            MonoBehaviour.FindObjectOfType<GameFlow>().allPieces.Remove(toDestroy.pieceGUI);
+            //MonoBehaviour.FindObjectOfType<GameFlow>().allPieces.Remove(toDestroy.pieceGUI);
             for (int y = (int)gridLoc.y; y < GV.BOARD_SIZE.y; y++) //since piece removed, set all above unresolved
-                if (board[(int)gridLoc.x, y] != null)
+                if (board[(int)gridLoc.x, y] != null && board[(int)gridLoc.x, (int)y].settled == true)
                 {
                     board[(int)gridLoc.x, (int)y].settled = false;
                     if(!unresolvedPieces.Contains(board[(int)gridLoc.x, (int)y]))
@@ -102,10 +106,92 @@ public class Board
         return (board[(int)finalLoc.x, (int)finalLoc.y].settled);
     }
 
-    public void CheckForVictory(Vector2 gridLoc)
-    {
 
+#region boardPowerups
+    public void DestroyInDirection(Vector2 gridLoc, GV.Direction dir)
+    {
+        Vector2 locInDir = GetGridLocInDir(gridLoc, dir, false);
+        if (IsOutOfBounds(locInDir))
+            return;
+        DestroyPiece(locInDir);
     }
+
+    public void RotateBoard()
+    {
+        unresolvedPieces.Clear();
+        for (int x = 0; x < GV.BOARD_SIZE.x; x++)
+            for (int y = 0; y < GV.BOARD_SIZE.y; y++)
+                if (board[x, y] != null)
+                {
+                    board[x, y].settled = false;
+                }
+        for (int x = 0; x < GV.BOARD_SIZE.x; x++)
+            for (int y = 0; y < GV.BOARD_SIZE.y; y++)
+                if (board[x, y] != null)
+                {
+                    Piece p = board[x, y];
+                    Debug.Log("p loc: " + p.gridLoc);
+                    PieceFactory.Instance.CreateAndDropPieceAtLocation(new Vector2(p.gridLoc.y, p.gridLoc.x), p.pid);
+                    DestroyPiece(p.gridLoc);
+                }
+        
+        //destroy all pieces and remake board
+        //there should be safety check because of width bypass height
+        
+    }
+
+#endregion
+
+
+    #region Victory  //Victory Checks
+    private void PlayerScored(int pid)
+    {
+        GV.scoreBoards[pid].ModScored(1);
+    }
+
+    public void CheckForVictory(Vector2 gridLoc, int pid)
+    {
+        if(VictoryinDirections(gridLoc,pid,GV.Direction.North,GV.Direction.South)
+           || VictoryinDirections(gridLoc,pid,GV.Direction.NE,GV.Direction.SW)
+           || VictoryinDirections(gridLoc,pid,GV.Direction.East,GV.Direction.West)
+           || VictoryinDirections(gridLoc,pid,GV.Direction.NW, GV.Direction.SE))
+        {
+            PlayerScored(pid);
+        }
+    }
+
+    public bool VictoryinDirections(Vector2 gridLoc, int pid, GV.Direction dir1, GV.Direction dir2)
+    {
+        int score = ScoreInDirection(gridLoc, dir1, pid) + ScoreInDirection(gridLoc, dir2, pid) + 1;// plus one for my tile
+        return score >= GV.GAME_SCORE_TO_WIN;
+    }
+
+    public bool VictoryinDirections(Vector2 gridLoc, int pid, List<GV.Direction> dirs)
+    {
+        int score = 1;
+        foreach (GV.Direction dir in dirs)
+        {
+            score += ScoreInDirection(gridLoc,dir,pid);
+        }
+        return score >= GV.GAME_SCORE_TO_WIN;
+    }
+
+
+    private int ScoreInDirection(Vector2 gridLoc, GV.Direction dir, int pid)
+    {
+        Vector2 locInDir = GetGridLocInDir(gridLoc, dir, false);
+        if (!IsOutOfBounds(locInDir) && Board.Instance.GetPlayerIDInGrid(locInDir) == pid)
+            return ScoreInDirection(locInDir, dir, pid) + 1;
+         return 0;
+    }
+
+    public int GetPlayerIDInGrid(Vector2 gridLoc)
+    {
+        if (GetPieceByGridPos(gridLoc) == null)
+            return -1;
+        return board[(int)gridLoc.x, (int)gridLoc.y].pid;
+    }
+    #endregion
     //helper funcs
 
     Vector2 ClampGridLoc(Vector2 v1)
@@ -118,26 +204,47 @@ public class Board
         return toRet;
     }
 
-    public Vector2 GetGridLocInDir(Vector2 loc, GV.Direction dir)
+    bool IsOutOfBounds(Vector2 gridLoc)
+    {
+        if (gridLoc.x < 0 || gridLoc.x >= GV.BOARD_SIZE.x || gridLoc.y < 0 || gridLoc.y > GV.BOARD_SIZE.y)
+            return true;
+        return false;
+    }
+
+    public Vector2 GetGridLocInDir(Vector2 loc, GV.Direction dir, bool forceClamp = true)
     {
         switch (dir)
         {
             case GV.Direction.Center: //do nut
                 break;
-            case GV.Direction.Down:
-                loc.y--;
+            case GV.Direction.North:
+                loc += new Vector2(0, 1);
                 break;
-            case GV.Direction.Left:
-                loc.x--;
+            case GV.Direction.NE:
+                loc += new Vector2(1, 1);
                 break;
-            case GV.Direction.Right:
-                loc.x++;
+            case GV.Direction.East:
+                loc += new Vector2(1, 0);
                 break;
-            case GV.Direction.Up:
-                loc.y++;
+            case GV.Direction.SE:
+                loc += new Vector2(1, -1);
                 break;
+            case GV.Direction.South:
+                loc += new Vector2(0, -1);
+                break;
+            case GV.Direction.SW:
+                loc += new Vector2(-1, -1);
+                break;
+            case GV.Direction.West:
+                loc += new Vector2(-1, 0);
+                break;
+            case GV.Direction.NW:
+                loc += new Vector2(-1, 1);
+                break;            
         }
-        return ClampGridLoc(loc);
+        if(forceClamp)
+            return ClampGridLoc(loc);
+        return loc;
     }
 
     #region Singleton

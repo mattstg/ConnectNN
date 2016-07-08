@@ -42,4 +42,27 @@ public class PieceFactory
         return slotgui;
     }
 
+    public void AddScoreBoardPiece(int pid)
+    {
+        GameObject scoreBoardPiece = MonoBehaviour.Instantiate(Resources.Load("Prefabs/ScoreBoardPiece")) as GameObject;
+        ScoreGUI scoreGUI = scoreBoardPiece.GetComponent<ScoreGUI>();
+        scoreBoardPiece.transform.SetParent(GV.scorePanelGrid);
+        foreach(UnityEngine.UI.Image img in scoreGUI.GetComponentsInChildren<UnityEngine.UI.Image>())
+              img.color = GV.GAME_PLAYER_COLORS[pid];
+        GV.scoreBoards.Add(pid,scoreGUI);
+    }
+
+    public void CreateAndDropPieceAtLocation(Vector2 worldPos, int pid)
+    {
+        PieceGUI curPiecePlacing = MakePiece(pid, worldPos);
+        Vector2 placementPos = GV.removeZ(worldPos); //initial drop
+        int col = (int)((placementPos.x / GV.SLOT_GUI_SIZE.x) + .5f);  //col itll land in
+        curPiecePlacing.AddPathToEnd(GV.RealWorldPosByGridLoc(new Vector2(col, GV.BOARD_SIZE.y))); //above the board
+        curPiecePlacing.AddPathToEnd(GV.RealWorldPosByGridLoc(new Vector2(col, GV.BOARD_SIZE.y - 1))); //first slot
+
+        Board.Instance.AddPiece(curPiecePlacing.piece, new Vector2(col, GV.BOARD_SIZE.y - 1));
+        curPiecePlacing.piece.gridLoc = new Vector2(col, GV.BOARD_SIZE.y - 1);
+    }
+    
+
 }

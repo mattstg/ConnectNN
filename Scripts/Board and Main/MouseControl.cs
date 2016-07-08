@@ -54,6 +54,18 @@ public class MouseControl : MonoBehaviour {
 
         curPiecePlacing = null;
         isPlacing = false;
-        
+        gameflow.PieceDropped();
+    }
+
+    public void DropPieceAtLocation(Piece piece, Vector2 worldPos)
+    {
+        PieceGUI curPiecePlacing = piece.pieceGUI;
+        Vector2 placementPos = GV.removeZ(Camera.main.ScreenToWorldPoint(Input.mousePosition)); //initial drop
+        int col = (int)((placementPos.x / GV.SLOT_GUI_SIZE.x) + .5f);  //col itll land in
+        curPiecePlacing.AddPathToEnd(GV.RealWorldPosByGridLoc(new Vector2(col, GV.BOARD_SIZE.y))); //above the board
+        curPiecePlacing.AddPathToEnd(GV.RealWorldPosByGridLoc(new Vector2(col, GV.BOARD_SIZE.y - 1))); //first slot
+
+        Board.Instance.AddPiece(curPiecePlacing.piece, new Vector2(col, GV.BOARD_SIZE.y - 1));
+        curPiecePlacing.piece.gridLoc = new Vector2(col, GV.BOARD_SIZE.y - 1);
     }
 }

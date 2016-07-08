@@ -1,13 +1,24 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class BombPowerUp : PowerUp {
 
     public override void usePower()
     {
-        for (int x = 0; x < GV.BOARD_SIZE.x; x++)
-            Board.Instance.DestroyPiece(new Vector2(x,piece.gridLoc.y));
-        for (int y = 0; y < GV.BOARD_SIZE.y; y++)
-            Board.Instance.DestroyPiece(new Vector2(piece.gridLoc.x,y));
+        Debug.Log("bomb goes off");
+        List<GV.Direction> directions = new List<GV.Direction>();
+        for(int i = 0; i < GV.PU_BOMB_DIRECTIONS; i++)
+        {
+            GV.Direction dir = (GV.Direction)Random.Range(0, System.Enum.GetNames(typeof(GV.Direction)).Length);
+            if(dir != GV.Direction.Center)
+                directions.Add(dir);
+        }
+
+        foreach (GV.Direction dir in directions)
+        {
+            Debug.Log("dir: " + dir.ToString());
+            Board.Instance.DestroyInDirection(piece.gridLoc, dir);
+        }
     }
 }

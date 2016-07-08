@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class GameFlow : MonoBehaviour {
 
     static int nextAvailableID = 0;
-    int currentGameTurn = 0;
+    public int piecesPlayed = 0;   
 
     public GV.GameState curGameState = GV.GameState.PlayerWatchingDrop;
     int curPlayerID;
@@ -14,6 +14,7 @@ public class GameFlow : MonoBehaviour {
     MouseControl mouseControl;
     List<Player> players = new List<Player>();
     public List<PieceGUI> allPieces = new List<PieceGUI>();
+    List<PowerUp> powerupsQueued = new List<PowerUp>();
     public Transform gridLayout;
     PowerUpManager powerupManager;
     
@@ -29,7 +30,21 @@ public class GameFlow : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         Board.Instance.UpdateUnresolved(Time.deltaTime);
+        ResolvePowerUps();
 	}
+
+    public void QueuePowerUp(PowerUp pup)
+    {
+        powerupsQueued.Add(pup);
+    }
+
+    
+    public void ResolvePowerUps()
+    {
+        foreach (PowerUp pu in powerupsQueued)
+            pu.usePower();
+        powerupsQueued.Clear();
+    }
 
     public void InitializeBoard()
     {
@@ -46,6 +61,20 @@ public class GameFlow : MonoBehaviour {
             GameObject spawnButton = Instantiate(Resources.Load("Prefabs/ClickableSpawn")) as GameObject;
             spawnButton.transform.SetParent(gridLayout);
             spawnButton.GetComponent<ClickableSpawn>().Initialize(i,GetComponent<MouseControl>());
+            PieceFactory.Instance.AddScoreBoardPiece(i);
         }
+    }
+
+    public void PieceDropped()
+    {
+        piecesPlayed++;
+        if (piecesPlayed % GV.POWERUP_SPAWN_RATE == 0)
+            powerupManager.CreateRandomPowerup();
+    }
+
+    //hacks cuz button, make debug class later
+    public void Rotate()
+    {
+        Board.Instance.RotateBoard();
     }
 }
